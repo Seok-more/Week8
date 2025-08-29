@@ -1,0 +1,7 @@
+make echo_server
+make echo_client
+
+./echo_server 12345
+
+./echoclient localhost 12345
+telnet localhost 12345

@@ -25,5 +25,17 @@ handin:
 	(make clean; cd ..; tar cvf $(USER)-proxylab-handin.tar proxylab-handout --exclude tiny --exclude nop-server.py --exclude proxy --exclude driver.sh --exclude port-for-user.pl --exclude free-port.sh --exclude ".*")
 
 clean:
-	rm -f *~ *.o proxy core *.tar *.zip *.gzip *.bzip *.gz
+	rm -f *~ *.o proxy core *.tar *.zip *.gzip *.bzip *.gz echo_server echo_client
 
+# echo
+echo_server: echo_server.o csapp.o
+	$(CC) $(CFLAGS) echo_server.o csapp.o -o echo_server $(LDFLAGS)
+
+echo_server.o: echo_server.c csapp.h
+	$(CC) $(CFLAGS) -c echo_server.c
+
+echo_client: echo_client.o csapp.o
+	$(CC) $(CFLAGS) echo_client.o csapp.o -o echo_client $(LDFLAGS)
+
+echo_client.o: echo_client.c csapp.h
+	$(CC) $(CFLAGS) -c echo_client.c
