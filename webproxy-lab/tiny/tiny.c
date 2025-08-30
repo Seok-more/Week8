@@ -153,45 +153,32 @@ void read_requesthdrs(rio_t *rp)
 // 해당 컨텐츠를 가져오거나 실행하기 위한 파일 경로와 인자(cgiargs)를 추출하는 함수
 int parse_uri(char *uri, char *filename, char *cgiargs)
 {
-  char *ptr;
-
-  // URI에 "cgi-bin"이 없으면 정적 컨텐츠로 간주
-  if (!strstr(uri, "cgi-bin"))
+  if (strstr(uri, "cgi-bin") == NULL)
   {
-    // CGI 인자 문자열을 빈 값으로 초기화
     strcpy(cgiargs, "");
-
-    // 파일 경로를 현재 디렉터리(.)로 시작하여 URI를 이어 붙임
     strcpy(filename, ".");
     strcat(filename, uri);
 
-    // 만약 URI가 '/'로 끝나면 기본 파일로 "home.html"을 추가
+    // '/'로 끝나는 경우만 home.html 붙임
     if (uri[strlen(uri) - 1] == '/')
-    {
       strcat(filename, "home.html");
-      return 1; // 정적 컨텐츠임을 반환
-    }
-    // 그렇지 않은 경우(동적 컨텐츠, 즉 CGI 프로그램)
-    else
-    {
-      // URI에 '?'가 있으면 이후 부분을 cgiargs에 저장 (쿼리 인자)
-      ptr = index(uri, '?'); // strchr(uri, '?')
-      if (ptr)
-      {
-        strcpy(cgiargs, ptr+1); // '?' 이후 문자열을 cgiargs에 저장
-        *ptr = '\0';            // URI에서 '?'를 '\0'으로 바꿔서 실제 파일 경로만 남김
-      }
-      else
-      {
-        // '?'가 없으면 cgiargs는 빈 문자열
-        strcpy(cgiargs, "");
-      }
 
-      // 파일 경로를 다시 현재 디렉터리(.)와 URI로 초기화
-      strcpy(filename, ".");
-      strcat(filename, uri);
-      return 0; // 동적 컨텐츠임을 반환
+    return 1; // 항상 정적 컨텐츠!
+  }
+  else
+  {
+    // 동적 컨텐츠 (cgi-bin)
+    char *ptr = index(uri, '?');
+    if (ptr)
+    {
+      strcpy(cgiargs, ptr + 1);
+      *ptr = '\0';
     }
+    else
+      strcpy(cgiargs, "");
+    strcpy(filename, ".");
+    strcat(filename, uri);
+    return 0;
   }
 }
 
