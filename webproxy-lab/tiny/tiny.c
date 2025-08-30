@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
 // 클라이언트(웹브라우저 등)가 보낸 HTTP 요청을 받아서
 // 요청에 따라 알맞은 파일이나 프로그램(CGI)을 실행해서 
-// 결과를 클라이언트에게 돌려주는 함수입니다.
+// 결과를 클라이언트에게 돌려주는 함수
 void doit(int fd)
 {
   int is_static;

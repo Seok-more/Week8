@@ -3,49 +3,60 @@
 // 클라이언트와의 연결에서 데이터를 받아서 그대로 다시 보내는 echo 함수
 void echo(int connfd) 
 {
-    size_t n;
+    size_t n;                      // 읽은 바이트 수
     char buf[MAXLINE];             // 데이터를 저장할 버퍼
-    rio_t rio;                     // robust I/O 구조체
+    rio_t rio;                     // robust I/O(버퍼링된 입출력) 구조체
 
-    Rio_readinitb(&rio, connfd);   // 소켓과 robust I/O 구조체 연결
+    // robust I/O 구조체 rio를 connfd(클라이언트 소켓)에 연결
+    // => 이후 rio 함수로 라인 단위 읽기 가능
+    Rio_readinitb(&rio, connfd);   
 
-    // 클라에서 한 줄씩 읽어서 그대로 다시 보냄
-    while ((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) 
+    // 클라이언트가 보낸 데이터를 한 줄씩 읽어서 다시 전송(echo)
+    while ((n = Rio_readlineb(&rio, buf, MAXLINE)) != 0) // EOF(연결 끊김)까지 반복
     {
+        // 서버가 받은 데이터의 길이와 내용을 출력
         printf("server received %d bytes: %s", (int)n, buf);
-        Rio_writen(connfd, buf, n);  // 받은 데이터를 클라이언트에게 다시 전송(echo)
+
+        // 받은 데이터를 그대로 클라이언트에 전송
+        Rio_writen(connfd, buf, n);
     }
 }
 
 int main(int argc, char **argv) 
 {
-    int listenfd, connfd;                               // 서버 소켓, 클라이언트 소켓
+    int listenfd, connfd;                               // 서버 리스닝 소켓, 클라이언트 연결 소켓
     socklen_t clientlen;                                // 클라이언트 주소 구조체 크기
-    struct sockaddr_storage clientaddr;                 // 다양한 주소 타입을 지원하는 구조체
-    char client_hostname[MAXLINE], client_port[MAXLINE];// 클라이언트 주소/포트 저장 버퍼
+    struct sockaddr_storage clientaddr;                 // 클라이언트 주소 저장(IPv4/IPv6 호환)
+    char client_hostname[MAXLINE], client_port[MAXLINE];// 클라이언트 호스트명/포트 저장 버퍼
 
-    // 명령 인자 제대로 넣었냐
+    // 명령행 인자 확인 (서버 실행 시 포트 번호 입력 필수)
     if (argc != 2) 
     {
         fprintf(stderr, "usage: %s <port>\n", argv[0]);
         exit(0);
     }
 
-    listenfd = open_listenfd(argv[1]); // 지정한 포트로 서버 소켓 생성 및 대기
+    // 지정한 포트로 서버 소켓 생성 및 listen 상태로 설정
+    listenfd = open_listenfd(argv[1]); 
 
-    // 클라 연결 처리
+    // 클라이언트 연결을 계속 받아 처리
     while (1) 
     {
         clientlen = sizeof(struct sockaddr_storage);
-        connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // 클라이언트 연결 수락, 소켓 생성
 
-        // 접속한 클라이언트의 호스트명과 포트 정보를 얻어서 출력
-        Getnameinfo((SA*)&clientaddr,clientlen,client_hostname,MAXLINE, client_port,MAXLINE,0);
-        printf("Connectedto (%s,%s)\n",client_hostname,client_port);
+        // 클라이언트의 연결 요청을 수락, 새로운 연결 소켓(connfd) 생성
+        connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
 
-        echo(connfd);       // 클라이언트와 echo 통신
-        Close(connfd);      // 클라이언트 소켓 닫기
+        // 연결한 클라이언트의 호스트명과 포트 번호를 알아내서 출력
+        Getnameinfo((SA *)&clientaddr, clientlen, client_hostname, MAXLINE, client_port, MAXLINE, 0);
+        printf("Connected to (%s, %s)\n", client_hostname, client_port);
+
+        // 클라이언트와 에코 통신 수행
+        echo(connfd);
+
+        // 연결 소켓 닫기 (다음 클라이언트 연결을 받을 준비)
+        Close(connfd);
     }
 
-    exit(0); // 근데 이걸 왜 넣어?
+    exit(0); // 이 프로그램은 무한루프지만, 명시적으로 종료 코드 반환
 }
