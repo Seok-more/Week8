@@ -1,7 +1,13 @@
 make echo_server
 make echo_client
-
 ./echo_server 12345
-
-./echoclient localhost 12345
+./echo_client localhost 12345
 telnet localhost 12345
+
+webproxy-lab/tiny$ 여기서
+make
+./tiny 8080
+
+http://localhost:8080/
+(deprecated)http://localhost:8080/cgi-bin/adder?222&111
+http://localhost:8080/adder.html

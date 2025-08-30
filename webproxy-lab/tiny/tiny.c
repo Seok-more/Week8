@@ -11,7 +11,7 @@
 void doit(int fd);
 void read_requesthdrs(rio_t *rp);
 int parse_uri(char *uri, char *filename, char *cgiargs);
-void serve_static(int fd, char *filename, int filesize);
+void serve_static(int fd, char *filename, int filesize, int is_head);
 void get_filetype(char *filename, char *filetype);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
@@ -60,6 +60,7 @@ int main(int argc, char **argv)
 void doit(int fd)
 {
   int is_static;
+  int is_head = 0;
   struct stat sbuf;
   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
   char filename[MAXLINE], cgiargs[MAXLINE];
@@ -78,11 +79,17 @@ void doit(int fd)
   sscanf(buf, "%s %s %s", method, uri, version);
 
   // 지원하지 않는 HTTP 메서드일 경우 에러 메시지 전송 후 함수 종료
-  if (strcasecmp(method, "GET"))
+  // -> 11.11 HEAD 추가
+  if (strcasecmp(method, "HEAD") == 0) 
+  {
+    is_head = 1;
+  } 
+  else if (strcasecmp(method, "GET")) 
   {
     clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
     return;
   }
+  
 
   // 추가적인 요청 헤더(Host, User-Agent 등) 읽어서 무시 (기능 확장 가능)
   read_requesthdrs(&rio);
@@ -108,7 +115,7 @@ void doit(int fd)
       return;
     }
     // 정적 파일을 클라이언트에게 전송
-    serve_static(fd, filename, sbuf.st_size);
+    serve_static(fd, filename, sbuf.st_size, is_head);
   }
   // 요청이 동적 컨텐츠(CGI 프로그램 실행)일 경우
   else
@@ -184,7 +191,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
 
 // 정적 컨텐츠(HTML, 이미지, 텍스트 등 일반 파일)를 
 // 클라이언트(웹브라우저)에게 전송하는 함수
-void serve_static(int fd, char *filename, int filesize)
+void serve_static(int fd, char *filename, int filesize, int is_head)
 {
   int srcfd;
   char *srcp, filetype[MAXLINE];
@@ -220,15 +227,23 @@ void serve_static(int fd, char *filename, int filesize)
 
   // 작성한 응답 헤더를 클라이언트에게 전송
   Rio_writen(fd, buf, strlen(buf));
-  printf("Response headers:\n");
-  printf("%s", buf);
+  printf("Response headers:\n%s", buf);
 
-  // 요청한 파일을 읽어서 클라이언트에게 전송
-  srcfd = Open(filename, O_RDONLY, 0); // 파일 열기
-  srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0); // 파일을 메모리에 매핑
-  Close(srcfd); // 파일 디스크립터 닫기
-  Rio_writen(fd, srcp, filesize);
-  Munmap(srcp, filesize); // 메모리 매핑 해제
+  if (!is_head)
+  {
+      // 요청한 파일을 읽어서 클라이언트에게 전송
+    srcfd = Open(filename, O_RDONLY, 0); // 파일 열기
+
+    // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0); // 파일을 메모리에 매핑
+    srcp = (char*)malloc(filesize);
+    Rio_readn(srcfd, srcp, filesize);
+
+    Close(srcfd); // 파일 디스크립터 닫기
+    Rio_writen(fd, srcp, filesize);
+
+    // Munmap(srcp, filesize); // 메모리 매핑 해제
+    free(srcp); 
+  }
 }
 
 
@@ -253,6 +268,16 @@ void get_filetype(char *filename, char *filetype)
   {
      strcpy(filetype,"image/jpeg");
   }
+  // 11.7 Expand to MPG
+  else if(strstr(filename, ".mpg"))
+  {
+      strcpy(filetype, "video/mpeg");
+  }
+  else if (strstr(filename, ".mp4")) 
+  {
+      strcpy(filetype, "video/mp4");
+  }
+  //
   else
   {
      strcpy(filetype,"text/plain");
