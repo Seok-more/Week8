@@ -144,6 +144,7 @@ void doit(int fd)
   printf("Request line: %s", buf);
 
   // GET /index.html HTTP/1.1\r\n
+  // /index.html
   // GET http://localhost:12345/index.html HTTP/1.1\r\n (프록시 요청)
   // HEAD /image.png HTTP/1.0\r\n
   // 요청 라인을 method, uri, version으로 분리해서 저장

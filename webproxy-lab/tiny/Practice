@@ -48,6 +48,7 @@ Content-type: text/html
 
 Connection closed by foreign host.
 
+
 [구현] 웹 프록시 (순차적 처리)
 
 [구현] 동시 병렬 처리
@@ -57,10 +58,46 @@ Connection closed by foreign host.
 [테스트] PC 네트워크 설정 > 프록시 설정
 
 [테스트] 로컬 > 프록시 > tiny home.html 요청 (성공)
+</html>jungle@8bab1fe1c51f:/workspaces/webproxy_lab_docker$ curl -v -x localhost:12345 http://localhost:8080/
+* Host localhost:12345 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+*   Trying [::1]:12345...
+* connect to ::1 port 12345 from ::1 port 49446 failed: Connection refused
+*   Trying 127.0.0.1:12345...
+* Connected to localhost (127.0.0.1) port 12345
+> GET http://localhost:8080/ HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/8.5.0
+> Accept: */*
+> Proxy-Connection: Keep-Alive
+> 
+* HTTP 1.0, assume close after body
+< HTTP/1.0 200 OK
+< Server: Tiny Web Server
+< Connection: close
+< Content-length: 205
+< Content-type: text/html
+< 
+<html>
+<head><title>test</title></head>
+<body> 
+<img align="middle" src="godzilla.gif">
+<br>
+<video controls width="640" height="360" src="sample.mp4"></video>
+<br>
+Dave O'Hallaron
+</body>
+* Closing connection
+
 
 [테스트] 원격 프록시 서버 중지 후, 로컬 > 프록시 > tiny home.html 요청 (실패)
 
 [테스트] 프록시 TC수행점수
+
+
+
+
 
 
 
@@ -75,3 +112,6 @@ pthread_rwlock_wrlock
 
 큐를 쓰면 중간에 있는 사용된 노드를 큐의 맨뒤로 옮기는 과정이 굉장히 불편
 -> 앞뒤 연결 리스트 쓰자
+
+Race condition은 **두 개 이상의 스레드나 프로세스가 같은 자원(메모리, 변수, 파일 등)**에 동시에 접근해서,
+실행 순서나 타이밍에 따라 결과가 달라지는 상황을 말해요.

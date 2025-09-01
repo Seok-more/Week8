@@ -75,6 +75,9 @@ void doit(int fd)
   // 요청 라인 출력 (디버깅용)
   printf("Request line: %s", buf);
 
+  // GET /index.html HTTP/1.1\r\n
+  // GET http://localhost:12345/index.html HTTP/1.1\r\n (프록시 요청)
+  // HEAD /image.png HTTP/1.0\r\n
   // 요청 라인을 method, uri, version으로 분리해서 저장
   sscanf(buf, "%s %s %s", method, uri, version);
 
@@ -91,7 +94,7 @@ void doit(int fd)
   }
   
 
-  // 추가적인 요청 헤더(Host, User-Agent 등) 읽어서 무시 (기능 확장 가능)
+  // 추가적인 요청 헤더(Host, User-Agent 등) 읽어서 무시 
   read_requesthdrs(&rio);
   
   // URI를 파싱해서 정적/동적 컨텐츠 여부와 파일 이름, CGI 인자 추출

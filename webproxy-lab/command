@@ -5,16 +5,23 @@ make echo_client
 ./echo_client localhost 12345
 telnet localhost 12345
 
+telnet 172.17.0.2 12345
+
 #Tiny
 webproxy-lab/tiny$ 여기서
 make
 ./tiny 8080
+curl -v http://localhost:8080/
 http://localhost:8080/
 (deprecated)http://localhost:8080/cgi-bin/adder?222&111
 http://localhost:8080/adder.html
 
 #Proxy
 ./driver.sh 
+./proxy 12345
+
+curl -v -x localhost:12345 http://localhost:8080/
+
 
 # 아 헤드처리 했던걸 없애야하네
 
@@ -25,3 +32,6 @@ ps aux | grep tiny
 
 pkill -f './proxy'
 pkill -f './tiny'
+
+
+포트 목록을 확인해서 점유된 포트를 확인해보자
