@@ -13,7 +13,7 @@ void read_requesthdrs(rio_t *rp);
 int parse_uri(char *uri, char *filename, char *cgiargs);
 void serve_static(int fd, char *filename, int filesize, int is_head);
 void get_filetype(char *filename, char *filetype);
-void serve_dynamic(int fd, char *filename, char *cgiargs);
+void serve_dynamic(int fd, char *filename, char *cgiargs, int is_head);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
                  char *longmsg);
 
@@ -130,7 +130,7 @@ void doit(int fd)
       return;
     }
     // CGI 프로그램 실행 결과를 클라이언트에게 전송
-    serve_dynamic(fd, filename, cgiargs);
+    serve_dynamic(fd, filename, cgiargs, is_head);
   }
 }
 
@@ -289,7 +289,7 @@ void get_filetype(char *filename, char *filetype)
 
 // CGI(CGI-bin) 방식의 동적 컨텐츠(프로그램 실행 결과)를
 // 클라이언트에게 응답으로 전송하는 함수
-void serve_dynamic(int fd, char *filename, char *cgiargs)
+void serve_dynamic(int fd, char *filename, char *cgiargs, int is_head)
 {
   char buf[MAXLINE], *emptylist[] = { NULL };
 
@@ -302,6 +302,12 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
   // 서버 정보 헤더를 작성 및 전송
   sprintf(buf, "Server: Tiny Web Server\r\n");
   Rio_writen(fd, buf, strlen(buf));
+
+  if (is_head) 
+  {
+    // HEAD 요청이면 헤더만 보내고 본문 송출 생략
+    return;
+  }
 
   // 자식 프로세스 생성 (CGI 프로그램 실행을 위해)
   if (Fork() == 0)
@@ -318,6 +324,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
 
   // 부모 프로세스는 자식 프로세스(CGI 프로그램) 종료까지 대기
   Wait(NULL);
+  
 }
 
 // 클라이언트(웹브라우저)가 잘못된 요청을 보냈을 때,

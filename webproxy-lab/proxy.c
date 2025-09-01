@@ -170,16 +170,16 @@ void doit(int fd)
 
   // 캐시 체크
   char object_buf[MAX_OBJECT_SIZE];
-    int object_size = 0;
-    if (cache_find(&cache, uri, object_buf, &object_size)) 
+  int object_size = 0;
+  if (cache_find(&cache, uri, object_buf, &object_size)) 
+  {
+    // 캐시에 있으면 바로 클라이언트에게 전송
+    if (!is_head)
     {
-        // 캐시에 있으면 바로 클라이언트에게 전송
-        if (!is_head)
-          {
-            Rio_writen(fd, object_buf, object_size);
-          }
-        return;
+      Rio_writen(fd, object_buf, object_size);
     }
+    return;
+  }
 
   // 캐시가 없으면 서버에 요청, 추출한 hostname과 port로 웹서버(tiny)에 연결해서 서버 소켓 생성
   int serverfd = Open_clientfd(hostname, port);
@@ -197,13 +197,14 @@ void doit(int fd)
   Rio_writen(serverfd, request, strlen(request));
 
   // 서버에서 데이터 받아서 클라이언트로 전달 + 캐싱
-  rio_t rio_server;
-  char cache_object[MAX_OBJECT_SIZE];
-  int cache_size = 0;
-  ssize_t n;
+  rio_t rio_server;                    // 서버(tiny) 소켓에 robust I/O 구조체 바인딩.
+  char cache_object[MAX_OBJECT_SIZE];  // 캐시에 저장할 데이터 버퍼 (최대 100 KiB).
+  int cache_size = 0;                  // 현재까지 받은 데이터의 총 크기.
+  ssize_t n;                           // 한 번에 읽어온 데이터의 바이트 수.
 
   Rio_readinitb(&rio_server, serverfd);
 
+  // 서버(tiny)로부터 데이터를 반복해서 읽음, 읽은 데이터가 있으면 반복
   while ((n = Rio_readnb(&rio_server, buf, MAX_OBJECT_SIZE)) > 0) 
   {
     // 클라이언트에 전달
@@ -212,7 +213,7 @@ void doit(int fd)
       Rio_writen(fd, buf, n);
     }
 
-    // 캐시할 오브젝트 크기 제한 내라면 캐시 버퍼에 쌓기
+    // 캐시할 오브젝트 크기 제한 이내라면 캐시 버퍼에 쌓기
     if (cache_size + n <= MAX_OBJECT_SIZE)
     {
       memcpy(cache_object + cache_size, buf, n);
@@ -243,7 +244,8 @@ void read_requesthdrs(rio_t *rp, char *header_host, char *header_other)
   header_other[0] = '\0';
 
   // 헤더의 끝은 "\r\n" (빈 줄)이므로, 빈 줄을 만날 때까지 반복
-  while (Rio_readlineb(rp, buf, MAXLINE) > 0 && strcmp(buf, "\r\n")) {
+  while (Rio_readlineb(rp, buf, MAXLINE) > 0 && strcmp(buf, "\r\n")) 
+  {
     // Host 헤더는 별도로 저장 (여러 개일 때 첫 번째만 저장)
     if (!strncasecmp(buf, "Host:", 5)) 
     {
@@ -400,9 +402,9 @@ void cache_free_block(cache_block_t *block)
 {
   if (block) 
   {
-        free(block->object);
-        free(block);
-    }
+    free(block->object);
+    free(block);
+  }
 }
 
 // 캐시 정리 
