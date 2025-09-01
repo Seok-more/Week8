@@ -20,6 +20,7 @@ http://localhost:8080/adder.html
 
 ps aux | grep proxy 명령어는 **리눅스/유닉스 터미널에서 "proxy"라는 이름이 포함된 실행 중인 프로세스(즉, 백그라운드에서 동작 중인 프로그램)**를 찾을 때 사용하는 명령어입니다.
 
+ps aux | grep proxy
 ps aux | grep tiny
 
 pkill -f './proxy'
